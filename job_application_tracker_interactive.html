@@ -1,0 +1,317 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font-sans);background:transparent}
+.app{padding:1rem 0}
+.top-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:1.25rem}
+.top-bar h2{font-size:16px;font-weight:500;color:var(--color-text-primary);flex:1;min-width:120px}
+input[type=text]{flex:1;min-width:140px;max-width:220px}
+select{min-width:110px}
+.btn{padding:6px 14px;border:0.5px solid var(--color-border-secondary);border-radius:var(--border-radius-md);background:transparent;color:var(--color-text-primary);font-size:13px;cursor:pointer;transition:background .15s}
+.btn:hover{background:var(--color-background-secondary)}
+.btn-primary{background:#185FA5;color:#fff;border-color:#185FA5}
+.btn-primary:hover{background:#0C447C;border-color:#0C447C}
+.tabs{display:flex;gap:4px;margin-bottom:1.25rem;border-bottom:0.5px solid var(--color-border-tertiary);padding-bottom:0}
+.tab{padding:7px 16px;font-size:13px;border:none;background:transparent;cursor:pointer;color:var(--color-text-secondary);border-bottom:2px solid transparent;margin-bottom:-1px;border-radius:0;transition:color .15s}
+.tab.active{color:#185FA5;border-bottom-color:#185FA5;font-weight:500}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:10px;margin-bottom:1.25rem}
+.stat{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:10px 12px}
+.stat-label{font-size:11px;color:var(--color-text-secondary);margin-bottom:4px}
+.stat-val{font-size:22px;font-weight:500;color:var(--color-text-primary)}
+.stat-val.green{color:#1D9E75}
+.stat-val.amber{color:#BA7517}
+.stat-val.red{color:#A32D2D}
+.stat-val.blue{color:#185FA5}
+.view-table{width:100%;overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+th{background:var(--color-background-secondary);padding:8px 10px;text-align:left;font-weight:500;font-size:11px;color:var(--color-text-secondary);border-bottom:0.5px solid var(--color-border-tertiary);white-space:nowrap;cursor:pointer;user-select:none}
+th:hover{color:var(--color-text-primary)}
+td{padding:8px 10px;border-bottom:0.5px solid var(--color-border-tertiary);color:var(--color-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--color-background-secondary)}
+.badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:500}
+.b-applied{background:#E6F1FB;color:#0C447C}
+.b-interviewing{background:#FAEEDA;color:#633806}
+.b-offer{background:#EAF3DE;color:#27500A}
+.b-rejected{background:#FCEBEB;color:#791F1F}
+.b-ghosted{background:#F1EFE8;color:#444441}
+.b-high{background:#FCEBEB;color:#791F1F}
+.b-medium{background:#FAEEDA;color:#633806}
+.b-low{background:#EAF3DE;color:#27500A}
+.kanban{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;align-items:start}
+.col-header{font-size:11px;font-weight:500;color:var(--color-text-secondary);padding:6px 10px;border-radius:var(--border-radius-md) var(--border-radius-md) 0 0;display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.col-header .cnt{font-size:11px;font-weight:500;padding:1px 7px;border-radius:99px}
+.kcol{background:var(--color-background-secondary);border-radius:var(--border-radius-md);padding:8px;min-height:80px}
+.kcard{background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:10px;margin-bottom:8px;cursor:pointer;transition:border-color .15s}
+.kcard:hover{border-color:var(--color-border-primary)}
+.kcard:last-child{margin-bottom:0}
+.kcard-co{font-size:12px;font-weight:500;color:var(--color-text-primary);margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.kcard-title{font-size:11px;color:var(--color-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:6px}
+.kcard-meta{display:flex;justify-content:space-between;align-items:center}
+.days{font-size:10px;color:var(--color-text-tertiary)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:center;justify-content:center;z-index:100}
+.modal{background:var(--color-background-primary);border-radius:var(--border-radius-lg);border:0.5px solid var(--color-border-tertiary);padding:1.5rem;width:540px;max-width:95vw;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:15px;font-weight:500;margin-bottom:1rem;color:var(--color-text-primary)}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:4px}
+.form-group.full{grid-column:1/-1}
+label{font-size:11px;color:var(--color-text-secondary);font-weight:500}
+.modal input,.modal select,.modal textarea{width:100%;font-size:13px}
+.modal textarea{resize:vertical;min-height:60px}
+.form-actions{display:flex;gap:8px;margin-top:1rem;justify-content:flex-end}
+.empty{text-align:center;padding:2rem;color:var(--color-text-secondary);font-size:13px}
+.sort-arrow{margin-left:4px;opacity:.5}
+</style>
+
+<div class="app">
+<div class="top-bar">
+  <h2>Job Applications</h2>
+  <input type="text" id="search" placeholder="Search company, role..." oninput="render()">
+  <select id="filterStatus" onchange="render()">
+    <option value="">All Statuses</option>
+    <option>Applied</option><option>Interviewing</option><option>Offer</option><option>Rejected</option><option>Ghosted</option>
+  </select>
+  <select id="filterPriority" onchange="render()">
+    <option value="">All Priorities</option>
+    <option>High</option><option>Medium</option><option>Low</option>
+  </select>
+  <button class="btn btn-primary" onclick="openModal()">+ Add Application</button>
+</div>
+
+<div class="stats" id="stats"></div>
+
+<div class="tabs">
+  <button class="tab active" onclick="setTab('list',this)">List view</button>
+  <button class="tab" onclick="setTab('kanban',this)">Kanban</button>
+</div>
+
+<div id="view-list">
+  <div class="view-table">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:26px">#</th>
+          <th style="width:130px" onclick="sort('company')">Company <span class="sort-arrow">↕</span></th>
+          <th style="width:130px" onclick="sort('role')">Role <span class="sort-arrow">↕</span></th>
+          <th style="width:80px">Location</th>
+          <th style="width:72px" onclick="sort('status')">Status <span class="sort-arrow">↕</span></th>
+          <th style="width:56px">Priority</th>
+          <th style="width:84px" onclick="sort('date')">Applied <span class="sort-arrow">↕</span></th>
+          <th style="width:54px">Days</th>
+          <th style="width:80px">Salary</th>
+          <th style="width:52px">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <div id="list-empty" class="empty" style="display:none">No applications match your filters.</div>
+</div>
+
+<div id="view-kanban" style="display:none">
+  <div class="kanban" id="kanban"></div>
+</div>
+</div>
+
+<div id="modal-bg" class="modal-bg" style="display:none" onclick="if(event.target===this)closeModal()">
+<div class="modal">
+  <h3 id="modal-title">Add Application</h3>
+  <div class="form-grid">
+    <div class="form-group"><label>Company *</label><input id="f-company" placeholder="Google"></div>
+    <div class="form-group"><label>Job Title *</label><input id="f-role" placeholder="Software Engineer"></div>
+    <div class="form-group"><label>Location</label><input id="f-location" placeholder="Remote"></div>
+    <div class="form-group"><label>Job Type</label>
+      <select id="f-type"><option>Full-time</option><option>Part-time</option><option>Internship</option><option>Contract</option></select>
+    </div>
+    <div class="form-group"><label>Status</label>
+      <select id="f-status"><option>Applied</option><option>Interviewing</option><option>Offer</option><option>Rejected</option><option>Ghosted</option></select>
+    </div>
+    <div class="form-group"><label>Priority</label>
+      <select id="f-priority"><option>High</option><option>Medium</option><option>Low</option></select>
+    </div>
+    <div class="form-group"><label>Source</label>
+      <select id="f-source"><option>LinkedIn</option><option>Referral</option><option>Company Website</option><option>Indeed</option><option>Glassdoor</option><option>Other</option></select>
+    </div>
+    <div class="form-group"><label>Date Applied</label><input type="date" id="f-date"></div>
+    <div class="form-group"><label>Salary Range</label><input id="f-salary" placeholder="$100k – $130k"></div>
+    <div class="form-group"><label>Follow-up Date</label><input type="date" id="f-followup"></div>
+    <div class="form-group"><label>Contact Name</label><input id="f-contact" placeholder="Jane Doe"></div>
+    <div class="form-group"><label>Contact Email</label><input id="f-email" placeholder="jane@company.com"></div>
+    <div class="form-group full"><label>Job Link</label><input id="f-link" placeholder="https://..."></div>
+    <div class="form-group full"><label>Notes</label><textarea id="f-notes" placeholder="Add any notes..."></textarea></div>
+  </div>
+  <div class="form-actions">
+    <button class="btn" onclick="closeModal()">Cancel</button>
+    <button class="btn btn-primary" id="save-btn" onclick="saveApp()">Save Application</button>
+  </div>
+</div>
+</div>
+
+<script>
+const today = new Date(); today.setHours(0,0,0,0);
+function daysAgo(d){if(!d)return'—';const diff=Math.floor((today-new Date(d))/(86400000));return diff<0?'future':diff===0?'today':diff+'d';}
+function dayNum(d){if(!d)return null;const diff=Math.floor((today-new Date(d))/(86400000));return diff;}
+
+let apps=[
+  {id:1,company:'Google',role:'Software Engineer',location:'Mountain View, CA',type:'Full-time',source:'LinkedIn',date:'2025-04-10',status:'Interviewing',priority:'High',salary:'$150k–$200k',link:'https://careers.google.com',contact:'Jane Doe',email:'jane@google.com',followup:'2025-04-28',notes:'Phone screen done'},
+  {id:2,company:'Meta',role:'Data Scientist',location:'Menlo Park, CA',type:'Full-time',source:'Company Website',date:'2025-04-14',status:'Applied',priority:'High',salary:'$140k–$180k',link:'',contact:'John Smith',email:'jsmith@meta.com',followup:'2025-04-30',notes:'Awaiting response'},
+  {id:3,company:'Spotify',role:'Product Manager',location:'New York, NY',type:'Full-time',source:'Referral',date:'2025-04-01',status:'Rejected',priority:'Medium',salary:'$130k–$160k',link:'',contact:'Amy Lee',email:'amy@spotify.com',followup:'',notes:'Not a fit for current role'},
+  {id:4,company:'Stripe',role:'Backend Engineer',location:'Remote',type:'Contract',source:'LinkedIn',date:'2025-04-18',status:'Offer',priority:'High',salary:'$180k–$220k',link:'',contact:'Mike Chen',email:'mchen@stripe.com',followup:'2025-05-01',notes:'Offer letter received!'},
+  {id:5,company:'Airbnb',role:'UX Designer',location:'San Francisco, CA',type:'Full-time',source:'Company Website',date:'2025-04-05',status:'Ghosted',priority:'Low',salary:'$120k–$150k',link:'',contact:'',email:'',followup:'',notes:'No response after 3 weeks'},
+];
+let nextId=6;
+let sortCol='date',sortDir=-1,editId=null,currentTab='list';
+
+function statusBadge(s){const m={Applied:'applied',Interviewing:'interviewing',Offer:'offer',Rejected:'rejected',Ghosted:'ghosted'};return`<span class="badge b-${m[s]||'applied'}">${s}</span>`}
+function priorityBadge(p){const m={High:'high',Medium:'medium',Low:'low'};return`<span class="badge b-${m[p]||'low'}">${p}</span>`}
+
+function filtered(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const st=document.getElementById('filterStatus').value;
+  const pr=document.getElementById('filterPriority').value;
+  return apps.filter(a=>{
+    if(q&&!a.company.toLowerCase().includes(q)&&!a.role.toLowerCase().includes(q)&&!a.location.toLowerCase().includes(q))return false;
+    if(st&&a.status!==st)return false;
+    if(pr&&a.priority!==pr)return false;
+    return true;
+  });
+}
+
+function sorted(arr){
+  return [...arr].sort((a,b)=>{
+    let av=a[sortCol]||'',bv=b[sortCol]||'';
+    return av<bv?-sortDir:av>bv?sortDir:0;
+  });
+}
+
+function sort(col){if(sortCol===col)sortDir*=-1;else{sortCol=col;sortDir=1;}render();}
+
+function renderStats(){
+  const total=apps.length,offers=apps.filter(a=>a.status==='Offer').length,
+    interviews=apps.filter(a=>a.status==='Interviewing').length,
+    pending=apps.filter(a=>a.status==='Applied').length;
+  document.getElementById('stats').innerHTML=`
+    <div class="stat"><div class="stat-label">Total</div><div class="stat-val blue">${total}</div></div>
+    <div class="stat"><div class="stat-label">Applied</div><div class="stat-val">${pending}</div></div>
+    <div class="stat"><div class="stat-label">Interviewing</div><div class="stat-val amber">${interviews}</div></div>
+    <div class="stat"><div class="stat-label">Offers</div><div class="stat-val green">${offers}</div></div>
+    <div class="stat"><div class="stat-label">Rejected</div><div class="stat-val red">${apps.filter(a=>a.status==='Rejected').length}</div></div>
+  `;
+}
+
+function renderList(){
+  const rows=sorted(filtered());
+  const tb=document.getElementById('tbody');
+  const emp=document.getElementById('list-empty');
+  if(!rows.length){tb.innerHTML='';emp.style.display='';return;}
+  emp.style.display='none';
+  tb.innerHTML=rows.map((a,i)=>`
+    <tr>
+      <td style="color:var(--color-text-tertiary);font-size:11px">${i+1}</td>
+      <td title="${a.company}">${a.link?`<a href="${a.link}" style="color:#185FA5;text-decoration:none">${a.company}</a>`:a.company}</td>
+      <td title="${a.role}">${a.role}</td>
+      <td title="${a.location}" style="color:var(--color-text-secondary)">${a.location}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td>${priorityBadge(a.priority)}</td>
+      <td style="color:var(--color-text-secondary)">${a.date||'—'}</td>
+      <td style="font-size:11px;color:${(dayNum(a.date)||0)>30?'#A32D2D':'var(--color-text-secondary)'}">${daysAgo(a.date)}</td>
+      <td style="color:var(--color-text-secondary);font-size:11px">${a.salary||'—'}</td>
+      <td>
+        <button class="btn" style="padding:3px 8px;font-size:11px" onclick="openModal(${a.id})">Edit</button>
+        <button class="btn" style="padding:3px 8px;font-size:11px;color:#A32D2D;border-color:#F09595" onclick="deleteApp(${a.id})">✕</button>
+      </td>
+    </tr>`).join('');
+}
+
+function renderKanban(){
+  const statuses=['Applied','Interviewing','Offer','Rejected','Ghosted'];
+  const colors={Applied:'#185FA5',Interviewing:'#BA7517',Offer:'#1D9E75',Rejected:'#A32D2D',Ghosted:'#5F5E5A'};
+  const bgColors={Applied:'#E6F1FB',Interviewing:'#FAEEDA',Offer:'#EAF3DE',Rejected:'#FCEBEB',Ghosted:'#F1EFE8'};
+  const f=filtered();
+  document.getElementById('kanban').innerHTML=statuses.map(s=>{
+    const cards=f.filter(a=>a.status===s);
+    return`<div>
+      <div class="col-header" style="background:${bgColors[s]}">
+        <span style="color:${colors[s]}">${s}</span>
+        <span class="cnt" style="background:${colors[s]};color:#fff">${cards.length}</span>
+      </div>
+      <div class="kcol">
+        ${cards.length?cards.map(a=>`
+          <div class="kcard" onclick="openModal(${a.id})">
+            <div class="kcard-co">${a.company}</div>
+            <div class="kcard-title">${a.role}</div>
+            <div class="kcard-meta">
+              ${priorityBadge(a.priority)}
+              <span class="days">${daysAgo(a.date)}</span>
+            </div>
+          </div>`).join(''):'<div style="font-size:11px;color:var(--color-text-tertiary);text-align:center;padding:8px">None</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function render(){renderStats();if(currentTab==='list')renderList();else renderKanban();}
+
+function setTab(tab,el){
+  currentTab=tab;
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('view-list').style.display=tab==='list'?'':'none';
+  document.getElementById('view-kanban').style.display=tab==='kanban'?'':'none';
+  render();
+}
+
+function openModal(id){
+  editId=id||null;
+  document.getElementById('modal-title').textContent=id?'Edit Application':'Add Application';
+  document.getElementById('save-btn').textContent=id?'Save Changes':'Save Application';
+  if(id){
+    const a=apps.find(x=>x.id===id);
+    document.getElementById('f-company').value=a.company;
+    document.getElementById('f-role').value=a.role;
+    document.getElementById('f-location').value=a.location;
+    document.getElementById('f-type').value=a.type;
+    document.getElementById('f-status').value=a.status;
+    document.getElementById('f-priority').value=a.priority;
+    document.getElementById('f-source').value=a.source;
+    document.getElementById('f-date').value=a.date;
+    document.getElementById('f-salary').value=a.salary;
+    document.getElementById('f-followup').value=a.followup;
+    document.getElementById('f-contact').value=a.contact;
+    document.getElementById('f-email').value=a.email;
+    document.getElementById('f-link').value=a.link;
+    document.getElementById('f-notes').value=a.notes;
+  } else {
+    ['f-company','f-role','f-location','f-salary','f-followup','f-contact','f-email','f-link','f-notes'].forEach(id=>document.getElementById(id).value='');
+    document.getElementById('f-type').value='Full-time';
+    document.getElementById('f-status').value='Applied';
+    document.getElementById('f-priority').value='High';
+    document.getElementById('f-source').value='LinkedIn';
+    document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+  }
+  document.getElementById('modal-bg').style.display='flex';
+}
+
+function closeModal(){document.getElementById('modal-bg').style.display='none';}
+
+function saveApp(){
+  const company=document.getElementById('f-company').value.trim();
+  const role=document.getElementById('f-role').value.trim();
+  if(!company||!role){alert('Company and Job Title are required.');return;}
+  const data={company,role,location:document.getElementById('f-location').value.trim(),
+    type:document.getElementById('f-type').value,status:document.getElementById('f-status').value,
+    priority:document.getElementById('f-priority').value,source:document.getElementById('f-source').value,
+    date:document.getElementById('f-date').value,salary:document.getElementById('f-salary').value.trim(),
+    followup:document.getElementById('f-followup').value,contact:document.getElementById('f-contact').value.trim(),
+    email:document.getElementById('f-email').value.trim(),link:document.getElementById('f-link').value.trim(),
+    notes:document.getElementById('f-notes').value.trim()};
+  if(editId){Object.assign(apps.find(a=>a.id===editId),data);}
+  else{apps.push({id:nextId++,...data});}
+  closeModal();render();
+}
+
+function deleteApp(id){if(confirm('Remove this application?')){apps=apps.filter(a=>a.id!==id);render();}}
+
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+render();
+</script>
