@@ -106,8 +106,11 @@ th{color:var(--muted);cursor:pointer}
 </div>
 
 <script>
+// ---------- CONFIG ----------
+const API_URL = "https://sheetdb.io/api/v1/jl81lxv12oigl";
+
 // ---------- State ----------
-let apps = JSON.parse(localStorage.getItem('apps')||'[]');
+let apps = [];
 let view = localStorage.getItem('view') || 'kanban';
 let sortCol = 'date', sortDir = -1, editId = null;
 const STATUSES = ['Applied','Interview','Offer','Rejected','Ghosted'];
@@ -116,8 +119,19 @@ const STATUSES = ['Applied','Interview','Offer','Rejected','Ghosted'];
 const $ = id => document.getElementById(id);
 const today = new Date(); today.setHours(0,0,0,0);
 const daysAgo = d => d ? Math.floor((today - new Date(d)) / 86400000) : null;
-const save = () => localStorage.setItem('apps', JSON.stringify(apps));
 
+// ---------- API ----------
+async function loadApps(){
+  const res = await fetch(API_URL);
+  apps = await res.json();
+
+  // convert id to number
+  apps = apps.map(a => ({ ...a, id: Number(a.id) }));
+
+  render();
+}
+
+// ---------- Filters ----------
 function filtered(){
   const q = $('q').value.toLowerCase();
   const s = $('fStatus').value; const p = $('fPriority').value;
@@ -175,7 +189,7 @@ function renderBoard(){
         <h3>${s} <span>${list.length}</span></h3>
         ${list.map(a=>{
           const d = daysAgo(a.date);
-          const warn = d!==null && d>7 && a.status==='Applied' ? '<div class=\"warn\">Follow up</div>' : '';
+          const warn = d!==null && d>7 && a.status==='Applied' ? '<div class="warn">Follow up</div>' : '';
           return `
             <div class="card" draggable="true" ondragstart="dragStart(event,${a.id})" onclick="openModal(${a.id})">
               <div><b>${a.company}</b></div>
@@ -203,7 +217,7 @@ function renderTable(){
       <td>${a.priority||''}</td>
       <td>${a.date||''}</td>
       <td>${d===null?'—':(d===0?'today':d+'d')}</td>
-      <td><button onclick=\"openModal(${a.id})\">Edit</button> <button onclick=\"remove(${a.id})\">✕</button></td>
+      <td><button onclick="openModal(${a.id})">Edit</button> <button onclick="remove(${a.id})">✕</button></td>
     </tr>`;
   }).join('');
 }
@@ -216,33 +230,80 @@ function render(){
 
 // ---------- DnD ----------
 function dragStart(e,id){ e.dataTransfer.setData('id', id); }
-function drop(e,status){ const id = Number(e.dataTransfer.getData('id')); apps = apps.map(a=>a.id===id?{...a,status}:a); save(); render(); }
+
+async function drop(e,status){
+  const id = Number(e.dataTransfer.getData('id'));
+
+  await fetch(`${API_URL}/id/${id}`, {
+    method:"PATCH",
+    headers:{ "Content-Type":"application/json" },
+    body: JSON.stringify({ data: { status } })
+  });
+
+  loadApps();
+}
 
 // ---------- CRUD ----------
 function openModal(id){
   editId = id || null;
-  $('mtitle').textContent = id ? 'Edit Application' : 'Add Application';
-  $('msave').textContent = id ? 'Save Changes' : 'Save';
   const a = apps.find(x=>x.id===id) || {};
-  $('mCompany').value = a.company||''; $('mRole').value = a.role||''; $('mLocation').value = a.location||'';
-  $('mStatus').value = a.status||'Applied'; $('mPriority').value = a.priority||'High'; $('mDate').value = a.date||'';
-  $('mSalary').value = a.salary||''; $('mLink').value = a.link||''; $('mNotes').value = a.notes||'';
+
+  $('mCompany').value = a.company||''; 
+  $('mRole').value = a.role||''; 
+  $('mLocation').value = a.location||'';
+  $('mStatus').value = a.status||'Applied'; 
+  $('mPriority').value = a.priority||'High'; 
+  $('mDate').value = a.date||'';
+  $('mSalary').value = a.salary||''; 
+  $('mLink').value = a.link||''; 
+  $('mNotes').value = a.notes||'';
+
   $('mbg').style.display='flex';
 }
+
 function closeModal(){ $('mbg').style.display='none'; }
-function saveApp(){
+
+async function saveApp(){
   const company=$('mCompany').value.trim(), role=$('mRole').value.trim();
   if(!company||!role){ alert('Company and Role required'); return; }
-  const data={company,role,location:$('mLocation').value.trim(),status:$('mStatus').value,priority:$('mPriority').value,date:$('mDate').value,salary:$('mSalary').value.trim(),link:$('mLink').value.trim(),notes:$('mNotes').value.trim()};
-  if(editId){ Object.assign(apps.find(a=>a.id===editId), data); }
-  else { apps.push({id:Date.now(), ...data}); }
-  save(); closeModal(); render();
-}
-function remove(id){ if(confirm('Delete this item?')){ apps = apps.filter(a=>a.id!==id); save(); render(); } }
 
-// ---------- Import/Export ----------
-function exportData(){ const blob=new Blob([JSON.stringify(apps)],{type:'application/json'}); const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='jobs.json'; a.click(); }
-$('import').addEventListener('change', e=>{ const f=e.target.files[0]; if(!f) return; const r=new FileReader(); r.onload=()=>{ try{ apps=JSON.parse(r.result)||[]; save(); render(); }catch{ alert('Invalid file'); } }; r.readAsText(f); });
+  const data={
+    id: editId || Date.now(),
+    company, role,
+    location:$('mLocation').value.trim(),
+    status:$('mStatus').value,
+    priority:$('mPriority').value,
+    date:$('mDate').value,
+    salary:$('mSalary').value.trim(),
+    link:$('mLink').value.trim(),
+    notes:$('mNotes').value.trim()
+  };
+
+  if(editId){
+    await fetch(`${API_URL}/id/${editId}`, {
+      method:"PATCH",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ data })
+    });
+  } else {
+    await fetch(API_URL, {
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body: JSON.stringify({ data })
+    });
+  }
+
+  closeModal();
+  loadApps();
+}
+
+async function remove(id){
+  if(!confirm('Delete this item?')) return;
+
+  await fetch(`${API_URL}/id/${id}`, { method:"DELETE" });
+
+  loadApps();
+}
 
 // ---------- View ----------
 function toggleView(){ view = view==='kanban'?'table':'kanban'; localStorage.setItem('view', view); render(); }
@@ -250,7 +311,9 @@ function toggleView(){ view = view==='kanban'?'table':'kanban'; localStorage.set
 // ---------- Init ----------
 ['q','fStatus','fPriority'].forEach(id=> $(id).addEventListener('input', render));
 document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); if(e.key==='n') openModal(); });
-render();
+
+// START
+loadApps();
 </script>
 </body>
 </html>
